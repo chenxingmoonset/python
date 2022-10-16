@@ -1,0 +1,72 @@
+# python
+源代码：
+1、诡秘之主爬取
+
+# @Time:2022/10/16
+# @Author:chenxing
+# @File:诡秘之主.py
+###
+import time
+import requests
+from lxml import etree
+import os
+
+if not os.path.exists('./缓存'): #创建缓存文件夹来存放抓取的每一章节文件
+    os.mkdir('./缓存')           
+else:  #如不存在则创建文件夹，如存在则清空再创建
+    shutil.rmtree('./缓存')
+    os.mkdir('./缓存')
+
+def download(url,title):#下载内容
+    resp=requests.get(url)
+    resp.encoding='utf-8'
+    html=resp.text
+    tree=etree.HTML(html)
+    body = tree.xpath("/html/body/div[3]/div/div[2]/div/text()")
+    body = '\n'.join(body)
+    with open(f'./缓存/{title}.txt',mode='w',encoding='utf-8')as f:
+        f.write(body)
+        print(title+'完成')
+
+def geturl(url):#获取子链接
+    resp=requests.get(url,headers=headers)
+    resp.encoding='utf-8'
+    html=resp.text
+    #print(html)
+    tree=etree.HTML(html)
+    lis=tree.xpath("/html/body/div[3]/div[3]/dl/dd")
+    #print(lis)
+    for li in lis:
+        href=li.xpath("./a/@href")[0].strip('/')
+        href="https://www.hetushu.com/"+href
+        title=li.xpath("./a/text()")[0]
+        download(href,title)
+
+if __name__ == '__main__':
+    url="https://www.hetushu.com/book/4917/index.html"
+    headers={
+        'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'}
+    t1=time.time()
+    geturl(url)
+    t2=time.time()
+    print("耗时：",t2-t1)
+print('！！！下载完毕！！！')
+
+
+
+2、诡秘之主合并
+
+
+import os
+with open('./诡秘之主.txt','a',encoding='utf-8') as f:
+        #循环打开缓存中每一章的内容保存到新的文件中
+        path='./缓存'  #设置存放路径
+        files=os.listdir(path)
+        files=sorted(files, key=lambda x:os.path.getmtime(os.path.join(path, x)))
+        print(files)
+        for file in files:
+            position=path+'\\'+file
+            print(position)
+            f.write(file+'\n')
+            content=open(position,'r',encoding='utf-8').read() #打开每章节文件
+            f.write(content)
